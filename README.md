@@ -47,7 +47,7 @@ import zenodo_mzml_repo
 database = 7824517
 test_repo = zenodo_mzml_repo.mzml_repo(database)
 test_repo.partial_indexing = True
-file_name = list(test_repo.all_files.keys())[0]
+file_name = 'subset_dq_00086_11cell_90min_hrMS2_A9.mzML'
 scan1 = test_repo.get_scan(file_name, '16799') # Scan number can be str or int
 
 print("Scan 1's retention time: " + str(scan1['rt time']))
