@@ -1,5 +1,4 @@
 ## A Python Package for Mass Spectrometry
-```markdown
 Developed by Akshay Jay.  
 Use case: create an `mzml_repo` object. After providing a Zenodo database ID, the object stores the name, URL, and size of all files in the database.
 
@@ -71,5 +70,4 @@ print("Scan 1's retention time: " + str(scan1['RT-time']))
 print("Scan 2's charge state: " + str(scan2['charge']))
 print("Scan 3's collision energy: " + str(scan3['collision energy']))
 print("Scan 4's MS level: " + str(scan4['ms level']))
-```
 ```
