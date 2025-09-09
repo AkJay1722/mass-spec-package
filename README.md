@@ -22,7 +22,7 @@ The `get_scan()` method retrieves a specific scan from the file and returns it a
 Data structure returned by `get_scan()` is a dictionary with keys:  
 - `'mz'`: m/z values (`numpy` array)  
 - `'intensities'`: normalized intensity values (`numpy` array)  
-- `'RT-time'`: retention time (float or `'N/A'`)  
+- `'rt time'`: retention time (float or `'N/A'`)  
 - `'charge'`: charge state (int or `'N/A'`)  
 - `'collision energy'`: collision energy (float or `'N/A'`)  
 - `'ms level'`: MS level (int or `'N/A'`)  
