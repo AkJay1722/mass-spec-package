@@ -16,10 +16,8 @@ Requesting a scan from the file will provide the scan's mz and intensity values 
 
 E.g. to access the `scan_dict` for a file, use `all_scans[file_name][0]`.  
 The `populate_all_scans()` method populates the `scan_dict` for a given file.  
-Toggle between partial and full indexing via the `partial_indexing` attribute.  
-The `get_scan()` method retrieves a specific scan from the file and returns it as a dictionary.
-
-The scan's attributes are as follows:  
+Toggle between partial and full indexing via the `partial_indexing` attribute.
+The `get_scan()` method retrieves a specific scan from the file and returns it as a dictionary.  
 Data structure returned by `get_scan()` is a dictionary with keys:  
 - `'mz'`: m/z values (`numpy` array)  
 - `'intensities'`: normalized intensity values (`numpy` array)  
@@ -29,23 +27,6 @@ Data structure returned by `get_scan()` is a dictionary with keys:
 - `'ms level'`: MS level (int or `'N/A'`)  
 
 `get_scan()` depends on `populate_all_scans()` since it retrieves the desired scan's byte offset from `all_scans`.
-
-## Runtime
-
-Based on 5 tests from 4 Zenodo databases.  
-Using a wired connection with ~100Mbps.  
-Average file size: 55 MB
-
-### First Scan in a File
-
-- Average runtime: 12.08 seconds  
-- Median runtime: 10.29 seconds
-
-### All Successive Scans in the File
-
-- Average Runtime: 0.78 seconds  
-- Median Runtime: 0.83 seconds  
-(Data table coming soon)
 
 ## Valid Formats
 
@@ -71,3 +52,20 @@ print("Scan 2's charge state: " + str(scan2['charge']))
 print("Scan 3's collision energy: " + str(scan3['collision energy']))
 print("Scan 4's MS level: " + str(scan4['ms level']))
 ```
+
+## Runtime
+
+Based on 5 tests from 4 Zenodo databases.  
+Using a wired connection with ~100Mbps.  
+Average file size: 55 MB
+
+### First Scan in a File
+
+- Average runtime: 12.08 seconds  
+- Median runtime: 10.29 seconds
+
+### All Successive Scans in the File
+
+- Average Runtime: 0.78 seconds  
+- Median Runtime: 0.83 seconds  
+(Data table coming soon)
