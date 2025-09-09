@@ -16,7 +16,8 @@ Requesting a scan from the file will provide the scan's mz and intensity values 
 
 E.g. to access the `scan_dict` for a file, use `all_scans[file_name][0]`.  
 The `populate_all_scans()` method populates the `scan_dict` for a given file.  
-Toggle between partial and full indexing via the `partial_indexing` attribute.
+Toggle between partial and full indexing via the `partial_indexing` attribute.  
+### get_scan()
 The `get_scan()` method retrieves a specific scan from the file and returns it as a dictionary.  
 Data structure returned by `get_scan()` is a dictionary with keys:  
 - `'mz'`: m/z values (`numpy` array)  
