@@ -23,7 +23,7 @@ import time
 # Data structure returned by get_scan() is a dictionary with keys:
 # 'mz': m/z values (numpy array)
 # 'intensities': normalized intensity values (numpy array)
-# 'RT-time': retention time (float or 'N/A')
+# 'rt time': retention time (float or 'N/A')
 # 'charge': charge state (int or 'N/A')
 # 'collision energy': collision energy (float or 'N/A')
 # 'ms level': MS level (int or 'N/A')
@@ -166,85 +166,94 @@ class mzml_repo:
 
    # If a file is in all_scans already, return the scan. If not, call populate_all_scans first.
    def get_scan(self, file_name, given_scan):
-    start_time = time.time()  # Start the timer
+      start_time = time.time()  # Start the timer
 
-    if(file_name not in list(self.all_files.keys())):
-        raise ValueError("File not found in the database.")
-    if (file_name not in self.all_scans) or (given_scan not in self.all_scans[file_name][0]):
-        print(f"Scan {given_scan} not found in all_scans for {file_name}.\nPopulating all scans...")
-        self.populate_all_scans(file_name, given_scan)
+      given_scan = int(given_scan)
+      if(file_name not in list(self.all_files.keys())):
+         raise ValueError("File not found in the database.")
+      if (file_name not in self.all_scans) or (given_scan not in self.all_scans[file_name][0]):
+         print(f"Scan {given_scan} not found in all_scans for {file_name}.\nPopulating all scans...")
+         self.populate_all_scans(file_name, given_scan)
 
-    scan_dict = self.all_scans[file_name][0]
-    scan_numbers = list(scan_dict.keys())
-    max_scan = self.all_scans[file_name][2]
-    file_url = self.all_scans[file_name][3]
-    file_size = self.all_scans[file_name][4]
-    desired_scan = str(given_scan)
-    if desired_scan.startswith('0'):
-        desired_scan = desired_scan.lstrip('0')
-    if(desired_scan.isdigit() and (0 <= int(desired_scan) <= max_scan)):
-        if int(desired_scan) not in scan_numbers:
+      scan_dict = self.all_scans[file_name][0]
+      scan_numbers = list(scan_dict.keys())
+      max_scan = self.all_scans[file_name][2]
+      file_url = self.all_scans[file_name][3]
+      file_size = self.all_scans[file_name][4]
+      desired_scan = str(given_scan)
+      if desired_scan.startswith('0'):
+         desired_scan = desired_scan.lstrip('0')
+      if(desired_scan.isdigit() and (0 <= int(desired_scan) <= max_scan)):
+         if int(desired_scan) not in scan_numbers:
             print(f"Scan {desired_scan} not found. Please try again.")
             return
-    else:
-        print(f"Not a valid scan number. Please try again.")
-        return
-    next_scan_number = None
-    for scan_num in scan_numbers[1:]:
-        if scan_num > int(desired_scan):
+      else:
+         print(f"Not a valid scan number. Please try again.")
+         return
+      next_scan_number = None
+      for scan_num in scan_numbers[1:]:
+         if scan_num > int(desired_scan):
             next_scan_number = scan_num
             break
-    end_scan_id = next_scan_number
-    scan_start = scan_dict[given_scan]
-    scan_end = scan_dict[end_scan_id] - 10 if end_scan_id else file_size - 1
+      end_scan_id = next_scan_number
+      scan_start = scan_dict[given_scan]
+      scan_end = scan_dict[end_scan_id] - 10 if end_scan_id else file_size - 1
 
-    # Request the specific scan range from the server
-    headers = {"Range": f"bytes={scan_start}-{scan_end}"}
-    response = requests.get(file_url, headers=headers, stream=True)
-    response.raise_for_status()
+      # Request the specific scan range from the server
+      headers = {"Range": f"bytes={scan_start}-{scan_end}"}
+      response = requests.get(file_url, headers=headers, stream=True)
+      response.raise_for_status()
 
-    with open("target_scan.mzML", "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
+      with open("target_scan.mzML", "wb") as f:
+         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
-    print(f"Downloaded scan {desired_scan}")
+      print(f"Downloaded scan {desired_scan}")
 
-    # If searching the last index, ensure the file cuts off exactly at </spectrum>
-    if not end_scan_id:
-        with open("target_scan.mzML", "rb+") as f:
+      # If searching the last index, ensure the file cuts off exactly at </spectrum>
+      if not end_scan_id:
+         with open("target_scan.mzML", "rb+") as f:
             f.seek(0, 2)  # Move to the end of the file
             target_size = f.tell()
             f.seek(0)  # Move back to the start of the file
             content = f.read(target_size).decode("utf-8", errors="ignore")
             last_spectrum_end = content.rfind("</spectrum>")
             if last_spectrum_end != -1:
-                f.seek(last_spectrum_end + len("</spectrum>"))
-                f.truncate()
+                  f.seek(last_spectrum_end + len("</spectrum>"))
+                  f.truncate()
 
-    with mzml.read("target_scan.mzML") as reader:
-        for spectrum in reader:
+      with mzml.read("target_scan.mzML") as reader:
+         for spectrum in reader:
             mz_values = spectrum['m/z array']
             intensity_values = spectrum['intensity array']
             retention_time = spectrum.get('scanList', {}).get('scan', [{}])[0].get('scan start time', 'N/A')
             charge_state = spectrum.get('precursorList', {}).get('precursor', [{}])[0].get('selectedIonList', {}).get('selectedIon', [{}])[0].get('charge state', 'N/A')
             collision_energy = spectrum.get('precursorList', {}).get('precursor', [{}])[0].get('activation', {}).get('collision energy', 'N/A')
             ms_level = spectrum.get('ms level', 'N/A')
+            precursor_mz = 'N/A'
+            if 'precursorList' in spectrum:
+               precursors = spectrum['precursorList'].get('precursor', [])
+               if precursors:
+                  selected_ions = precursors[0].get('selectedIonList', {}).get('selectedIon', [])
+                  if selected_ions:
+                        precursor_mz = selected_ions[0].get('selected ion m/z', 'N/A')
 
-            max_intensity = max(intensity_values)
-            normalized_intensities = intensity_values / max_intensity  # Normalize the intensities
+            # max_intensity = max(intensity_values)
+            # normalized_intensities = intensity_values / max_intensity
             filtered_mz = mz_values # Can add a filtering option here if desired
-            filtered_intensity = normalized_intensities
+            # filtered_intensity = normalized_intensities
 
-    # Return scan as a dictionary
-    scan_data = {
-        'mz': filtered_mz,
-        'intensities': filtered_intensity,
-        'RT-time': retention_time,
-        'charge': charge_state,
-        'collision energy': collision_energy,
-        'ms level': ms_level
-    }
+      # Return scan as a dictionary
+      scan_data = {
+         'mz': filtered_mz,
+         'precursor_mz': precursor_mz,
+         'intensities': intensity_values,
+         'rt time': retention_time,
+         'charge': charge_state,
+         'collision energy': collision_energy,
+         'ms level': ms_level
+      }
 
-    end_time = time.time()  # End the timer
-    print(f"Time taken to retrieve scan {given_scan}: {end_time - start_time:.2f} seconds")  # Print runtime
+      end_time = time.time()  # End the timer
+      print(f"Time taken to retrieve scan {given_scan}: {end_time - start_time:.2f} seconds")  # Print runtime
 
-    return scan_data
+      return scan_data
