@@ -8,7 +8,6 @@ import time
 
 ###
 # Documentation:
-# file_names stores the names of every file in the database
 # all_files stores the size of each file in the database
 # all_scans is a dictionary of tuples where each key is a file name and the value is a tuple containing:
 #     1. scan_dict: a dictionary with keys as scan numbers and values as byte offsets
@@ -20,22 +19,29 @@ import time
 # The populate_all_scans() method populates the scan_dict for a given file.
 # Toggle between partial and full indexing via the partial_indexing attribute.
 # The get_scan() method retrieves a specific scan from the file and returns it as a dictionary.
-# get_scan() depends on populate_all_scans() since retrieves the desired scan's byte offset from all_scans
+# get_scan() depends on populate_all_scans() since it retrieves the desired scan's byte offset from all_scans
+# Data structure returned by get_scan() is a dictionary with keys:
+# 'mz': m/z values (numpy array)
+# 'intensities': normalized intensity values (numpy array)
+# 'RT-time': retention time (float or 'N/A')
+# 'charge': charge state (int or 'N/A')
+# 'collision energy': collision energy (float or 'N/A')
+# 'ms level': MS level (int or 'N/A')
 ###
 
 
 class mzml_repo:
    def __init__(self, databaseNum):
       self.database_num = databaseNum
-      self.file_names = []
       self.all_files = {}
       self.all_scans = {}
       self.partial_indexing = True
+      self.get_files()
 
    def get_files(self):
-      if self.file_names != []:
+      if self.all_files != {}:
          print("File names already retrieved.")
-         return self.file_names
+         return
       request_url = f"https://zenodo.org/api/records/{self.database_num}"
       response = requests.get(request_url)
       response.raise_for_status()
@@ -43,8 +49,6 @@ class mzml_repo:
 
       # Loop through the files to find a .mzML file
       self.all_files = {file['key']: file['size'] for file in data['files'] if file['key'].endswith('.mzML')}
-      file_url = None
-      file_size = 0
       print("Available files:")
       for file, size in self.all_files.items():
          if size < 1024:
@@ -56,15 +60,12 @@ class mzml_repo:
          else:
             size_str = f"{size / 1024**3:.2f} GB"
          print(f"{file} ({size_str})")
-         self.all_files[file] = size
-      self.file_names = list(self.all_files.keys())
-      return self.file_names
 
    # Create an entry in all_scans for each file and a list of its offsets
    def populate_all_scans_full(self, file_name):
-      if file_name not in self.file_names:
+      if file_name not in list(self.all_files.keys()):
          raise ValueError("File not found in the database.")
-      file_url = f"https://zenodo.org/record/{database}/files/{file_name}"
+      file_url = f"https://zenodo.org/record/{self.database_num}/files/{file_name}"
       file_size = self.all_files[file_name]
       if not file_url:
          raise ValueError("No .mzML file found in the provided Zenodo database.")
@@ -101,15 +102,16 @@ class mzml_repo:
       scan_dict = {int(scan_id): int(offset) for scan_id, offset in matches}
       first_scan = list(scan_dict.keys())[0] if scan_dict else None
       max_scan = list(scan_dict.keys())[-1] if scan_dict else None
+      print(f"First scan: {first_scan}, Max scan: {max_scan}")
       if max_scan is None:
          raise ValueError("No key containing a scan number found in scan_dict")
       self.all_scans[file_name] = (scan_dict, first_scan, max_scan, file_url, file_size)
    
    # Create an entry in all_scans for each file and a list of its offsets, but only up until the given scan number is read
    def populate_all_scans_partial(self, file_name, scan_number):
-      if file_name not in self.file_names:
+      if file_name not in list(self.all_files.keys()):
          raise ValueError("File not found in the database.")
-      file_url = f"https://zenodo.org/record/{database}/files/{file_name}"
+      file_url = f"https://zenodo.org/record/{self.database_num}/files/{file_name}"
       file_size = self.all_files[file_name]
       if not file_url:
          raise ValueError("No .mzML file found in the provided Zenodo database.")
@@ -166,7 +168,7 @@ class mzml_repo:
    def get_scan(self, file_name, given_scan):
     start_time = time.time()  # Start the timer
 
-    if(file_name not in self.file_names):
+    if(file_name not in list(self.all_files.keys())):
         raise ValueError("File not found in the database.")
     if (file_name not in self.all_scans) or (given_scan not in self.all_scans[file_name][0]):
         print(f"Scan {given_scan} not found in all_scans for {file_name}.\nPopulating all scans...")
@@ -246,17 +248,3 @@ class mzml_repo:
     print(f"Time taken to retrieve scan {given_scan}: {end_time - start_time:.2f} seconds")  # Print runtime
 
     return scan_data
-
-database = 10211590
-given_scan = 421
-test_repo = mzml_repo(database)
-test_repo.partial_indexing = False
-file_name = test_repo.get_files()[0]
-scan1 = test_repo.get_scan(file_name, given_scan)
-scan2 = test_repo.get_scan(file_name, 1685)
-scan3 = test_repo.get_scan(file_name, 8645)
-scan4 = test_repo.get_scan(file_name, 255)
-print(scan1['RT-time'])
-print(scan2['RT-time'])
-print(scan3['RT-time'])
-print(scan4['RT-time'])
